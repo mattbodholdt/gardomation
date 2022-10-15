@@ -41,7 +41,7 @@ def parse_args():
     return parser.parse_args()
 
 
-async def main(args, logger):
+async def run(args, logger):
   iterations = int(args.iterations)
   logger.info("Iterations: " + str(iterations) + " Sleep Time: " + str(args.sleepTime) + " Run Time: " + str(args.runTime))
 
@@ -88,10 +88,13 @@ async def main(args, logger):
 
     await meross_logout(manager, http_api_client)
 
-
-if __name__ == '__main__':
+def main(args, logger):
   loop = asyncio.get_event_loop()
   loop.run_until_complete(
-    main(args=parse_args(), logger=configure_logging())
+    run(args, logger)
   )
   loop.close()
+
+if __name__ == '__main__':
+  print("Starting Loop...")
+  main(args=parse_args(), logger=configure_logging())
