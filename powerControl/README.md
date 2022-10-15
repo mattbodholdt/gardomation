@@ -3,7 +3,7 @@
 Use to control a Meross plug.  In this case, to control how long a pump runs to drive sprinkler irrigation for microgreens.
 
 ```txt
-usage: microgreens.py [-h] [-u MEROSSUSER] [-p MEROSSPASS] [-d DEVICEUUIDS] [-i ITERATIONS] [-s SLEEPTIME] [-r RUNTIME]
+usage: loopedOutletController.py [-h] [-u MEROSSUSER] [-p MEROSSPASS] [-d DEVICEUUIDS] [-i ITERATIONS] [-s SLEEPTIME] [-r RUNTIME]
 
 Use to control Meross devices. Handles a single outlet device at a time. TODO - add support for multiple devices and multithreading
 
@@ -16,11 +16,11 @@ optional arguments:
   -d DEVICEUUIDS, --deviceUUIDs DEVICEUUIDS
                         String List of Meross Device UUIDs, default []. Note this script doesn't really support multiple devices yet.
   -i ITERATIONS, --iterations ITERATIONS
-                        Number of iterations to do, default is 5
+                        Number of iterations to do, default is 1000
   -s SLEEPTIME, --sleepTime SLEEPTIME
-                        Number of seconds to sleep between iterations, default is 15
+                        Number of seconds to sleep between iterations, default is 900
   -r RUNTIME, --runTime RUNTIME
-                        Number of seconds to leave the power on. Default is 5
+                        Number of seconds to leave the power on. Default is 30
 ```
 
 ##### Execution
@@ -39,7 +39,7 @@ fi
 export LOG_LEVEL="INFO"
 export DEVICE_UUIDS='["2001032327445025188348e1e9162a46"]'
 
-python3 microgreens.py \
+python3 loopedOutletController.py \
   --iterations 10 \
   --sleepTime 15 \
   --runTime 30 \

@@ -6,7 +6,6 @@ import json
 import logging
 import os
 
-from meross_iot.controller.mixins.electricity import ElectricityMixin
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
 
@@ -35,9 +34,9 @@ def parse_args():
     parser.add_argument("-p", "--merossPass", required=False, type=str, default=str(os.getenv('MP', "MerossControlPlanePw")),
                         help="Meross password")
     parser.add_argument("-d", "--deviceUUIDs", required=False, type=str, action="store", default=os.getenv('DEVICE_UUIDS', []), help="String List of Meross Device UUIDs, default %(default)s.  Note this script doesn't really support multiple devices yet.")
-    parser.add_argument("-i", "--iterations", required=False, type=int, action="store", default=5, help="Number of iterations to do, default is %(default)s")
-    parser.add_argument("-s", "--sleepTime", required=False, type=int, action="store", default=15, help="Number of seconds to sleep between iterations, default is %(default)s")
-    parser.add_argument("-r", "--runTime", required=False, type=int, action="store", default=5, help="Number of seconds to leave the power on. Default is %(default)s")
+    parser.add_argument("-i", "--iterations", required=False, type=int, action="store", default=1000, help="Number of iterations to do, default is %(default)s")
+    parser.add_argument("-s", "--sleepTime", required=False, type=int, action="store", default=900, help="Number of seconds to sleep between iterations, default is %(default)s")
+    parser.add_argument("-r", "--runTime", required=False, type=int, action="store", default=30, help="Number of seconds to leave the power on. Default is %(default)s")
     return parser.parse_args()
 
 
@@ -96,5 +95,4 @@ def main(args, logger):
   loop.close()
 
 if __name__ == '__main__':
-  print("Starting Loop...")
   main(args=parse_args(), logger=configure_logging())
