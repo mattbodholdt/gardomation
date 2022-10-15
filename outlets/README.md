@@ -1,4 +1,4 @@
-#### Microgreens Irrigation
+#### Outlet Control
 
 Use to control a Meross plug.  In this case, to control how long a pump runs to drive sprinkler irrigation for microgreens.
 
