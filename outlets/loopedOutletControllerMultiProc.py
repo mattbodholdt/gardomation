@@ -2,10 +2,11 @@
 
 import argparse
 import asyncio
+import atexit
 import json
 import logging
-import os
 import multiprocessing
+import os
 
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
@@ -34,7 +35,7 @@ def parse_args():
                         help="Meross user name")
     parser.add_argument("-p", "--merossPass", required=False, type=str, default=str(os.getenv('MP', "MerossControlPlanePw")),
                         help="Meross password")
-    parser.add_argument("-d", "--deviceUUIDs", required=False, type=str, action="store", default=os.getenv('DEVICE_UUIDS', []), help="String List of Meross Device UUIDs, default %(default)s.  Note this script doesn't really support multiple devices yet.")
+    parser.add_argument("-d", "--deviceUUIDs", required=False, type=str, action="store", default=os.getenv('DEVICE_UUIDS', []), help="String array of Meross Device UUIDs, default %(default)s. Pzrsed as JSON.")
     parser.add_argument("-i", "--iterations", required=False, type=int, action="store", default=1000, help="Number of iterations to do, default is %(default)s")
     parser.add_argument("-s", "--sleepTime", required=False, type=int, action="store", default=900, help="Number of seconds to sleep between iterations, default is %(default)s")
     parser.add_argument("-r", "--runTime", required=False, type=int, action="store", default=30, help="Number of seconds to leave the power on. Default is %(default)s")
@@ -44,8 +45,11 @@ def parse_args():
 async def run(loop_args, args, logger):
   iterations = int(args.iterations)
   logger.info("Iterations: " + str(iterations) + " Sleep Time: " + str(args.sleepTime) + " Run Time: " + str(args.runTime))
+  
+  device_uuid = loop_args.get('deviceUUID', None)
 
-  device_uuid = loop_args.get('deviceUUID')
+  if device_uuid is None:
+    raise Exception(device_uuid)
 
   logger.info("device_uuid: " + str(device_uuid))
   # Setup the HTTP client API from user-password
@@ -54,11 +58,14 @@ async def run(loop_args, args, logger):
   # Setup and start the device manager
   manager = MerossManager(http_client=http_api_client)
   await manager.async_init()
+  
+  atexit.register( meross_logout, manager, http_api_client)
+  
   await manager.async_device_discovery(meross_device_uuid = device_uuid)
   devs = manager.find_devices(device_uuids = [device_uuid])
 
   logger.info(str(len(devs)) + " device(s) found")
-  logger.debug(str(devs))
+  logger.debug(str(devs[0]))
 
   ## todo multiple devices, multiple threads
   for dev in devs:
@@ -70,40 +77,41 @@ async def run(loop_args, args, logger):
     while loop_count <= iterations:
       loop_count += 1
 
-      logger.info(f"Turning on device {dev.name} for {str(args.runTime)} seconds - Iteration {loop_count} of {str(iterations)}.")
+      logger.info(f"{dev.name} - Turning on for {str(args.runTime)} seconds - Iteration {str(loop_count)} of {str(iterations)}.")
       await dev.async_turn_on(channel=0)
 
-      await asyncio.sleep(args.sleepTime)
+      await asyncio.sleep( int(args.runTime) )
 
-      logger.info(f"Turning off {dev.name}, Iteration {str(loop_count)} of {str(iterations)}.")
+      logger.info(f'{dev.name} - Turning off after {str(args.runTime)} seconds. Iteration {str(loop_count)} of {str(iterations)}.')
       await dev.async_turn_off(channel=0)
 
       if loop_count < iterations:
-        logger.info(f"Sleeping {str(iterations)} seconds before next iteration.")
+        logger.info(f"{dev.name} - Sleeping {str(args.sleepTime)} seconds before next iteration.")
         await asyncio.sleep(args.sleepTime)
       else:
         logger.info("Final iteration, shutting down!")
 
-  await meross_logout(manager, http_api_client)
-
 
 def loop_it(loop_args, args, logger=configure_logging()): 
   loop = asyncio.get_event_loop()
+  # loop.call_soon_threadsafe(run(loop_args, args, logger=logger))
   loop.run_until_complete(run(loop_args, args, logger=logger))
-  loop.close()
-
 
 def main(args, logger):
   device_uuids = json.loads(args.deviceUUIDs)
   count = len(device_uuids)
+  logger.info("Starting " + str(count) + " processes for " + str(len(device_uuids)) + " deviceIds " + json.dumps(device_uuids))
   for i in range(count):
-    loop_args = {
+    iter_args = {
       'deviceUUID': device_uuids[i],
       'logger': logger
     }
-    logger.info('Loop Args: ' + str(i) +' - ' + str(loop_args))
-
-    p = multiprocessing.Process(target=loop_it, args=(loop_args, args, logger), name='Looped Outlet Controller for ' + str(device_uuids[i]))
+    p = multiprocessing.Process(
+      target=loop_it,
+      args=(iter_args, args, logger),
+      name='outletController-' + str(device_uuids[i]),
+      daemon=False,
+    )
     p.start()
     logger.info('Started: ' + str(p))
 
