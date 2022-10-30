@@ -7,21 +7,20 @@ if [ -z "$MU" ] || [ -z "$MP" ]; then
   exit 1
 fi
 
-
 export MEROSS_USER="$MU"
 export MEROSS_PASS="$MP"
 export LOG_LEVEL="INFO"
 
-RUN_TIME=${1:-5} # run for 5 seconds
-SLEEP_TIME=${2:-60} # sleep for 60 seconds
-ITERATIONS=${3:-1000} # do it a thousand times
+RUN_TIME=${1:-10} # run for 5 seconds
+SLEEP_TIME=${2:-50} # sleep for 60 seconds
+ITERATIONS=${3:-0} # number of times to do it, 0 means forever but the counter breaks
+DEVICE_UUIDS=${4:-${DEVICE_UUIDS:-'["ARRAY_OF_DEVICE_UUIDS_HERE"]'}}
 
-DEVICE_UUIDS='["YOURDEVICEUUIDHERE","ANOTHERDEVICEUUIDHEREETC"]'
-
-
-python3 "$(dirname $0)/loopedOutletControllerMultiProc.py" \
+scripture=$(find $(dirname $0) -name "*MultiProc.py" -type f | head -n 1)
+# 2012188285114690837348e1e9431dae
+python3 ${scripture} \
   --iterations ${ITERATIONS} \
   --sleepTime ${SLEEP_TIME} \
   --runTime ${RUN_TIME} \
-  -d "$DEVICE_UUIDS"
+  -d ${DEVICE_UUIDS}
 
